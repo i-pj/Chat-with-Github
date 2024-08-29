@@ -1,3 +1,4 @@
+import streamlit as st
 import repo_fetcher
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain_community.embeddings import OllamaEmbeddings
@@ -9,6 +10,7 @@ from langchain.prompts import PromptTemplate
 MODEL = "llama3:8b"
 
 
+@st.cache_resource
 def create_qa_chain(repo_url):
     documents = repo_fetcher.main(repo_url)
     text_splitter = RecursiveCharacterTextSplitter(
@@ -48,38 +50,42 @@ Answer: """
 
 
 def main():
-    repo_url = input("Enter the GitHub repository URL: ")
-    qa_chain = create_qa_chain(repo_url)
+    st.title("Chat with Github Repo")
 
-    while True:
-        user_input = input(
-            "\nYour question (or 'print <filename>' to see file contents, 'exit' to quit): "
-        )
-        if user_input.lower() == "exit":
-            print("Goodbye!")
-            break
-        elif user_input.lower().startswith("print "):
-            file_name = user_input.split(" ", 1)[1]
-            for document in repo_fetcher.main(repo_url):
-                if document["metadata"]["file_name"].endswith(file_name):
-                    print(f"Contents of {file_name}:")
-                    print(document["content"])
-                    break
+    repo_url = st.text_input("Enter the GitHub repository URL:")
+
+    if repo_url:
+        with st.spinner("Loading repository and creating QA chain..."):
+            qa_chain = create_qa_chain(repo_url)
+        st.success("Repository loaded and QA chain created!")
+
+        user_input = st.text_input("Ask a question about the repository:")
+
+        if user_input:
+            if user_input.lower().startswith("print "):
+                file_name = user_input.split(" ", 1)[1]
+                for document in repo_fetcher.main(repo_url):
+                    if document["metadata"]["file_name"].endswith(file_name):
+                        st.code(document["content"], language="python")
+                        break
+                else:
+                    st.warning(
+                        f"File {file_name} not found in the extracted documents."
+                    )
             else:
-                print(f"File {file_name} not found in the extracted documents.")
-        else:
-            result = qa_chain.invoke({"query": user_input})
-            print("\nAnswer:", result["result"])
-            if result.get("source_documents"):
-                sources = set(
-                    [
-                        doc.metadata.get("file_name", "Unknown")
-                        for doc in result["source_documents"]
-                    ]
-                )
-                print("\nSources:", ", ".join(sources))
-            else:
-                print("\nNo relevant sources found.")
+                with st.spinner("Generating answer..."):
+                    result = qa_chain.invoke({"query": user_input})
+                st.write("Answer:", result["result"])
+                if result.get("source_documents"):
+                    sources = set(
+                        [
+                            doc.metadata.get("file_name", "Unknown")
+                            for doc in result["source_documents"]
+                        ]
+                    )
+                    st.write("Sources:", ", ".join(sources))
+                else:
+                    st.write("No relevant sources found.")
 
 
 if __name__ == "__main__":

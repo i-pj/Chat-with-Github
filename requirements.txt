@@ -1,2 +1,3 @@
 langchain
+chromadb
 langchain_community

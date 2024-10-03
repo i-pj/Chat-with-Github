@@ -6,3 +6,6 @@ Goal is to make a Retrieval-Augmented Generator (RAG) for any github repo, curr
 - [ ] Automate the process using github action or make a pipeline which creates a RAG just by giving the repo link.
 - [ ] Make a interface using streamlit.
 - [ ] Manage ollama dependencies.
+
+## Demo:
+https://github.com/user-attachments/assets/3ac53614-2ccf-4c61-a8ef-b1e3fdb396a7
